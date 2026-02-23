@@ -1,39 +1,37 @@
 import streamlit as st
 from PIL import Image, ImageFilter
-import requests
-from io import BytesIO
 import random
 
-st.title("⚽ Futbolcu Tahmin Oyunu - İpuçlu Versiyon")
+st.title("⚽ Futbolcu Tahmin Oyunu - İpuçlu Versiyon (Local Resimler)")
 
-# Futbolcu listesi ve verileri
+# Futbolcu listesi ve verileri (resim dosyası artık local)
 players = {
     "lionel messi": {
-        "url": "https://upload.wikimedia.org/wikipedia/commons/8/89/Lionel_Messi_20180626.jpg",
+        "file": "images/messi.jpg",
         "team": "Inter Miami",
         "nationality": "Arjantin",
         "position": "Forvet"
     },
     "cristiano ronaldo": {
-        "url": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg",
+        "file": "images/ronaldo.jpg",
         "team": "Al Nassr",
         "nationality": "Portekiz",
         "position": "Forvet"
     },
     "neymar": {
-        "url": "https://upload.wikimedia.org/wikipedia/commons/3/34/Neymar_2018.jpg",
+        "file": "images/neymar.jpg",
         "team": "Al-Hilal",
         "nationality": "Brezilya",
         "position": "Forvet"
     },
     "kylian mbappé": {
-        "url": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Kylian_Mbapp%C3%A9_2019.jpg",
+        "file": "images/mbappe.jpg",
         "team": "Paris Saint-Germain",
         "nationality": "Fransa",
         "position": "Forvet"
     },
     "erling haaland": {
-        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Erling_Haaland_2019.jpg",
+        "file": "images/haaland.jpg",
         "team": "Manchester City",
         "nationality": "Norveç",
         "position": "Forvet"
@@ -53,10 +51,9 @@ if "player_name" not in st.session_state or st.button("Yeni Oyun"):
 blur_values = [15, 12, 9, 6, 3, 0]
 current_blur = blur_values[st.session_state.attempts]
 
-# Resmi yükle
-image_url = players[st.session_state.player_name]["url"]
-response = requests.get(image_url)
-image = Image.open(BytesIO(response.content))
+# Resmi yükle (local)
+image_path = players[st.session_state.player_name]["file"]
+image = Image.open(image_path)
 blurred_image = image.filter(ImageFilter.GaussianBlur(current_blur))
 st.image(
     blurred_image,
