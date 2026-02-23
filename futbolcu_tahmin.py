@@ -3,144 +3,110 @@ from PIL import Image, ImageFilter
 import random
 import os
 
-st.set_page_config(page_title="⚽ Futbolcu Tahmin Oyunu", layout="wide")
+# Sayfa Ayarları
+st.set_page_config(page_title="⚽ Futbolcu Tahmin Oyunu", layout="centered")
 
 # ----- Futbolcu Verileri -----
 players = {
-    "lionel messi": {
-        "file": "images/messi.jpg",
-        "team": "Inter Miami",
-        "nationality": "Arjantin",
-        "position": "Forvet",
-        "age": 36,
-        "birth_year": 1987
-    },
-    "cristiano ronaldo": {
-        "file": "images/ronaldo.jpg",
-        "team": "Al Nassr",
-        "nationality": "Portekiz",
-        "position": "Forvet",
-        "age": 38,
-        "birth_year": 1985
-    },
-    "neymar": {
-        "file": "images/neymar.jpg",
-        "team": "Al-Hilal",
-        "nationality": "Brezilya",
-        "position": "Forvet",
-        "age": 31,
-        "birth_year": 1992
-    },
-    "kylian mbappé": {
-        "file": "images/mbappe.jpg",
-        "team": "Paris Saint-Germain",
-        "nationality": "Fransa",
-        "position": "Forvet",
-        "age": 24,
-        "birth_year": 1998
-    },
-    "erling haaland": {
-        "file": "images/haaland.jpg",
-        "team": "Manchester City",
-        "nationality": "Norveç",
-        "position": "Forvet",
-        "age": 23,
-        "birth_year": 2000
-    }
+    "Lionel Messi": {"file": "images/messi.jpg", "team": "Inter Miami", "nationality": "Arjantin", "position": "Forvet", "age": 36},
+    "Cristiano Ronaldo": {"file": "images/ronaldo.jpg", "team": "Al Nassr", "nationality": "Portekiz", "position": "Forvet", "age": 38},
+    "Neymar": {"file": "images/neymar.jpg", "team": "Al-Hilal", "nationality": "Brezilya", "position": "Forvet", "age": 31},
+    "Kylian Mbappe": {"file": "images/mbappe.jpg", "team": "Real Madrid", "nationality": "Fransa", "position": "Forvet", "age": 25},
+    "Erling Haaland": {"file": "images/haaland.jpg", "team": "Manchester City", "nationality": "Norveç", "position": "Forvet", "age": 23}
 }
 
 # ----- Session State Başlat -----
-if "player_name" not in st.session_state:
-    st.session_state.player_name = random.choice(list(players.keys()))
+if "target_player" not in st.session_state:
+    st.session_state.target_player = random.choice(list(players.keys()))
     st.session_state.attempts = 0
     st.session_state.max_attempts = 5
-    st.session_state.score = 0
+    st.session_state.total_score = 0
     st.session_state.game_over = False
-    st.session_state.revealed_hints = []
-    st.session_state.guess = ""
+    st.session_state.hints_shown = []
 
-# ----- Sağ Üstte Toplam Puan -----
-st.sidebar.header("🏆 Toplam Puan")
-st.sidebar.write(st.session_state.score)
+def reset_game(next_player=True):
+    if next_player:
+        st.session_state.target_player = random.choice(list(players.keys()))
+    st.session_state.attempts = 0
+    st.session_state.game_over = False
+    st.session_state.hints_shown = []
+    st.rerun()
 
-# ----- Oyun Bitti Kontrol -----
-if st.session_state.game_over:
-    st.success("Oyun Bitti! 🎮")
-    st.write(f"Doğru cevabı: **{st.session_state.player_name.title()}**")
-    st.write(f"Toplam puanınız: **{st.session_state.score}**")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔄 Yeniden Oyna"):
-            st.session_state.player_name = random.choice(list(players.keys()))
-            st.session_state.attempts = 0
-            st.session_state.score = 0
-            st.session_state.game_over = False
-            st.session_state.revealed_hints = []
-            st.experimental_rerun()
-    with col2:
-        if st.button("❌ Çıkış"):
-            st.stop()
+# ----- Arayüz -----
+st.title("⚽ Futbolcuyu Tanıyabilecek misin?")
+st.divider()
 
-# ----- Bulanıklık Ayarı -----
-blur_values = [15, 12, 9, 6, 3, 0]
-current_blur = blur_values[min(st.session_state.attempts, len(blur_values)-1)]
+# Sidebar Puan Durumu
+st.sidebar.header("📊 İstatistikler")
+st.sidebar.metric("Toplam Puan", st.session_state.total_score)
+if st.sidebar.button("Oyunu Sıfırla"):
+    st.session_state.total_score = 0
+    reset_game()
 
-# ----- Resim Yükle ve Göster -----
-image_path = players[st.session_state.player_name]["file"]
-if not os.path.exists(image_path):
-    st.error(f"Resim bulunamadı: {image_path}")
-else:
-    image = Image.open(image_path)
-    blurred_image = image.filter(ImageFilter.GaussianBlur(current_blur))
-    st.image(
-        blurred_image,
-        caption=f"Tahmin et: Futbolcu kim? ({st.session_state.max_attempts - st.session_state.attempts} hakkınız kaldı)"
-    )
+# Oyun Ekranı
+col1, col2 = st.columns([1, 1])
 
-# ----- İpuçları -----
-all_hints = [
-    f"Milliyeti: {players[st.session_state.player_name]['nationality']}",
-    f"Takımı: {players[st.session_state.player_name]['team']}",
-    f"Pozisyonu: {players[st.session_state.player_name]['position']}",
-    f"Yaşı: {players[st.session_state.player_name]['age']}",
-    f"Doğum Yılı: {players[st.session_state.player_name]['birth_year']}"
-]
+# Bulanıklık Hesaplama
+blur_levels = [25, 18, 12, 6, 2, 0]
+current_blur = blur_levels[min(st.session_state.attempts, len(blur_levels)-1)]
 
-# İpuçlarını alt alta göster
-for i in st.session_state.revealed_hints:
-    st.info(all_hints[i])
+player_data = players[st.session_state.target_player]
 
-# ----- Tahmin Input -----
-guess = st.text_input("Futbolcunun adını veya soyadını yazabilirsiniz:", key="guess")
-if st.button("Tahmini Gönder"):
-    guess_text = st.session_state.guess.strip().lower()
-    if guess_text == "":
-        st.warning("Tahmin boş bırakılamaz!")
+with col1:
+    # Resim İşleme
+    if os.path.exists(player_data["file"]):
+        img = Image.open(player_data["file"])
+        blurred_img = img.filter(ImageFilter.GaussianBlur(current_blur))
+        st.image(blurred_img, use_container_width=True, caption="Kim bu futbolcu?")
     else:
-        # Ad, soyad veya tamamı doğruysa kabul
-        player_full_name = st.session_state.player_name.lower()
-        first_name, last_name = player_full_name.split(" ")[0], player_full_name.split(" ")[-1]
-        if guess_text == first_name or guess_text == last_name or guess_text == player_full_name:
-            st.success("🎉 Doğru! Tebrikler!")
-            st.session_state.score += (st.session_state.max_attempts - st.session_state.attempts) * 20
-            # Yeni futbolcuya otomatik geç
-            st.session_state.player_name = random.choice(list(players.keys()))
-            st.session_state.attempts = 0
-            st.session_state.revealed_hints = []
-            st.session_state.guess = ""
-            st.experimental_rerun()
+        st.error(f"Resim bulunamadı: {player_data['file']}")
+
+with col2:
+    st.subheader("İpuçları")
+    
+    # Mevcut ipuçlarını oluştur
+    all_hints = [
+        f"🌍 Uyruk: {player_data['nationality']}",
+        f"🏃 Pozisyon: {player_data['position']}",
+        f"🎂 Yaş: {player_data['age']}",
+        f"🏢 Takım: {player_data['team']}"
+    ]
+    
+    # Her yanlışta bir ipucu göster
+    for i in range(st.session_state.attempts):
+        if i < len(all_hints):
+            st.info(all_hints[i])
+        elif i == len(all_hints):
+            st.warning("Son Şans! Resim neredeyse netleşti.")
+
+# ----- Tahmin Formu -----
+if not st.session_state.game_over:
+    with st.form(key="guess_form", clear_on_submit=True):
+        user_guess = st.text_input("Tahmininizi buraya yazın:").strip().lower()
+        submit_button = st.form_submit_button("Tahmin Et")
+
+    if submit_button:
+        if user_guess == "":
+            st.warning("Lütfen bir isim girin.")
         else:
-            st.session_state.attempts += 1
-            # Yeni ipucu ekle
-            if len(st.session_state.revealed_hints) < len(all_hints):
-                st.session_state.revealed_hints.append(len(st.session_state.revealed_hints))
-            # Hakkı dolduysa oyun biter
-            if st.session_state.attempts >= st.session_state.max_attempts:
-                st.error(f"😢 Hakkınız bitti. Doğru cevap: {st.session_state.player_name.title()}")
-                st.session_state.score += 0
+            correct_name = st.session_state.target_player.lower()
+            
+            # Basit kontrol: İsim veya soyisim içeriyor mu?
+            if user_guess in correct_name and len(user_guess) > 3:
+                gain = (st.session_state.max_attempts - st.session_state.attempts) * 20
+                st.session_state.total_score += gain
+                st.balloons()
+                st.success(f"✅ TEBRİKLER! Doğru cevap: {st.session_state.target_player}. {gain} puan kazandınız!")
                 st.session_state.game_over = True
+                st.button("Sonraki Futbolcu", on_click=reset_game)
             else:
-                st.warning("Yanlış tahmin! Bulanıklık biraz azaldı, tekrar deneyin.")
-            # Inputu temizle
-            st.session_state.guess = ""
-            st.experimental_rerun()
+                st.session_state.attempts += 1
+                if st.session_state.attempts >= st.session_state.max_attempts:
+                    st.error(f"❌ Haklarınız bitti! Doğru cevap: {st.session_state.target_player}")
+                    st.session_state.game_over = True
+                    st.button("Yeniden Dene", on_click=reset_game)
+                else:
+                    st.rerun() # Bulanıklığı ve ipucunu güncellemek için
+else:
+    if st.session_state.attempts >= st.session_state.max_attempts:
+        st.button("Yeni Oyun", on_click=reset_game)
