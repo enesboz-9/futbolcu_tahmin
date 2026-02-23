@@ -1,4 +1,4 @@
-,import streamlit as st
+import streamlit as st
 from PIL import Image, ImageFilter
 import random
 import os
@@ -143,3 +143,4 @@ if pass_btn:
     st.session_state.current_question += 1
     pick_new_player()
     st.rerun()
+
