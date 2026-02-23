@@ -57,6 +57,7 @@ if "player_name" not in st.session_state:
     st.session_state.score = 0
     st.session_state.game_over = False
     st.session_state.revealed_hints = []
+    st.session_state.guess = ""
 
 # ----- Sağ Üstte Toplam Puan -----
 st.sidebar.header("🏆 Toplam Puan")
@@ -67,19 +68,22 @@ if st.session_state.game_over:
     st.success("Oyun Bitti! 🎮")
     st.write(f"Doğru cevabı: **{st.session_state.player_name.title()}**")
     st.write(f"Toplam puanınız: **{st.session_state.score}**")
-    if st.button("🔄 Yeniden Oyna"):
-        st.session_state.player_name = random.choice(list(players.keys()))
-        st.session_state.attempts = 0
-        st.session_state.score = 0
-        st.session_state.game_over = False
-        st.session_state.revealed_hints = []
-        st.experimental_rerun()
-    if st.button("❌ Çıkış"):
-        st.stop()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 Yeniden Oyna"):
+            st.session_state.player_name = random.choice(list(players.keys()))
+            st.session_state.attempts = 0
+            st.session_state.score = 0
+            st.session_state.game_over = False
+            st.session_state.revealed_hints = []
+            st.experimental_rerun()
+    with col2:
+        if st.button("❌ Çıkış"):
+            st.stop()
 
 # ----- Bulanıklık Ayarı -----
 blur_values = [15, 12, 9, 6, 3, 0]
-current_blur = blur_values[st.session_state.attempts]
+current_blur = blur_values[min(st.session_state.attempts, len(blur_values)-1)]
 
 # ----- Resim Yükle ve Göster -----
 image_path = players[st.session_state.player_name]["file"]
@@ -102,23 +106,29 @@ all_hints = [
     f"Doğum Yılı: {players[st.session_state.player_name]['birth_year']}"
 ]
 
-# Hangi ipuçlarının gösterileceğini kontrol et
+# İpuçlarını alt alta göster
 for i in st.session_state.revealed_hints:
     st.info(all_hints[i])
 
 # ----- Tahmin Input -----
-guess = st.text_input("Futbolcunun adını veya soyadını yazabilirsiniz:").strip().lower()
+guess = st.text_input("Futbolcunun adını veya soyadını yazabilirsiniz:", key="guess")
 if st.button("Tahmini Gönder"):
-    if guess == "":
+    guess_text = st.session_state.guess.strip().lower()
+    if guess_text == "":
         st.warning("Tahmin boş bırakılamaz!")
     else:
         # Ad, soyad veya tamamı doğruysa kabul
         player_full_name = st.session_state.player_name.lower()
         first_name, last_name = player_full_name.split(" ")[0], player_full_name.split(" ")[-1]
-        if guess == first_name or guess == last_name or guess == player_full_name:
+        if guess_text == first_name or guess_text == last_name or guess_text == player_full_name:
             st.success("🎉 Doğru! Tebrikler!")
-            st.session_state.score = (st.session_state.max_attempts - st.session_state.attempts) * 20
-            st.session_state.game_over = True
+            st.session_state.score += (st.session_state.max_attempts - st.session_state.attempts) * 20
+            # Yeni futbolcuya otomatik geç
+            st.session_state.player_name = random.choice(list(players.keys()))
+            st.session_state.attempts = 0
+            st.session_state.revealed_hints = []
+            st.session_state.guess = ""
+            st.experimental_rerun()
         else:
             st.session_state.attempts += 1
             # Yeni ipucu ekle
@@ -127,9 +137,10 @@ if st.button("Tahmini Gönder"):
             # Hakkı dolduysa oyun biter
             if st.session_state.attempts >= st.session_state.max_attempts:
                 st.error(f"😢 Hakkınız bitti. Doğru cevap: {st.session_state.player_name.title()}")
-                st.session_state.score = 0
+                st.session_state.score += 0
                 st.session_state.game_over = True
             else:
                 st.warning("Yanlış tahmin! Bulanıklık biraz azaldı, tekrar deneyin.")
-    # Inputu temizle
-    st.experimental_rerun()
+            # Inputu temizle
+            st.session_state.guess = ""
+            st.experimental_rerun()
